@@ -1,15 +1,31 @@
-// routes/incidentRoutes.js
+// Ruta del archivo: routes/incidentRoutes.js
+
+// --- 1. IMPORTACIONES ---
 const express = require('express');
 const router = express.Router();
 const incidentController = require('../controllers/incidentController');
-const { verifyToken } = require('../middleware/authMiddleware'); // Importamos el middleware de autenticación
+const { verifyToken } = require('../middleware/authMiddleware');
 
-console.log("incidentRoutes.js: Configurando ruta POST para / (crear incidencia - protegida)");
-// Esta ruta estará protegida, solo usuarios autenticados pueden crear incidencias.
+// --- 2. DEFINICIÓN DE RUTAS ---
+
+// Ruta para CREAR una nueva incidencia (protegida).
 router.post('/', verifyToken, incidentController.createIncident);
 
-// Aquí podrías añadir más rutas, como:
-// router.get('/', verifyToken, incidentController.getIncidents); // Para obtener todas las incidencias del usuario
-// router.get('/:id', verifyToken, incidentController.getIncidentById); // Para obtener una incidencia específica
+// Ruta para OBTENER TODAS las incidencias (protegida).
+// Necesaria para el panel de administrador.
+router.get('/', verifyToken, incidentController.getIncidents);
 
+// Ruta para OBTENER UNA incidencia específica por su ID (protegida).
+router.get('/:id', verifyToken, incidentController.getIncidentById);
+
+// Ruta para ACTUALIZAR una incidencia por su ID (protegida).
+// Útil para que un admin cambie el estado de "abierta" a "resuelta".
+router.put('/:id', verifyToken, incidentController.updateIncident);
+
+// Ruta para ELIMINAR una incidencia por su ID (protegida).
+// El controlador ya valida que solo un admin pueda hacer esto.
+router.delete('/:id', verifyToken, incidentController.deleteIncident);
+
+
+// --- 3. EXPORTACIÓN ---
 module.exports = router;

@@ -1,40 +1,40 @@
-// middleware/authMiddleware.js
+// Ruta del archivo: middleware/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET;
 
+// Middleware para verificar el token en cada petición protegida
 exports.verifyToken = (req, res, next) => {
-    // Obtener el token de la cabecera Authorization
-    // Usualmente viene en el formato "Bearer TOKEN_AQUI"
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token o el formato es incorrecto.' });
-    }
-
-    const token = authHeader.split(' ')[1]; // Extraemos el token
+    // Busca el token en el encabezado 'Authorization', que debe tener el formato "Bearer <token>"
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
+        return res.status(401).json({ message: 'No se proveyó un token. Acceso denegado.' });
     }
 
-    try {
-        // Verificar el token
-        const decodedPayload = jwt.verify(token, JWT_SECRET);
+    // Verifica el token usando la clave secreta
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            // Si el token es inválido o ha expirado, devuelve un error
+            return res.status(403).json({ message: 'Token inválido o expirado.' });
+        }
+        // Si el token es válido, guarda los datos del usuario en el objeto de la petición (req)
+        // para que las siguientes funciones puedan acceder a ellos.
+        req.user = user;
+        // Pasa el control a la siguiente función de middleware o al controlador final.
+        next();
+    });
+};
 
-        // Si el token es válido, el payload decodificado se añade al objeto de la petición (req)
-        // para que las siguientes funciones (controladores) puedan acceder a él.
-        req.user = decodedPayload; // Contendrá { userId: ..., email: ... } que pusimos al firmar
-        console.log("MIDDLEWARE: Token verificado correctamente. Usuario:", req.user);
-        next(); // Pasa el control a la siguiente función en la cadena (el controlador)
-    } catch (error) {
-        console.error('Error de autenticación de token:', error.message);
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: 'Token expirado. Por favor, inicie sesión de nuevo.' });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({ message: 'Token inválido.' });
-        }
-        // Otro tipo de error
-        return res.status(401).json({ message: 'Autenticación fallida.' });
+// --- NUEVA FUNCIÓN AÑADIDA ---
+// Middleware para verificar si el usuario tiene rol de administrador.
+// Este middleware debe usarse siempre DESPUÉS de verifyToken.
+exports.isAdmin = (req, res, next) => {
+    // Comprueba si req.user existe y si el tipo de usuario es 2 (admin)
+    if (req.user && req.user.tipo_usuario === 2) {
+        next(); // Es admin, puede continuar.
+    } else {
+        // Si no es admin, deniega el acceso con un error 403 (Prohibido).
+        res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
     }
 };

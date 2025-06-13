@@ -1,24 +1,35 @@
-// routes/authRoutes.js
+// Ruta del archivo: routes/authRoutes.js
+
+// --- 1. IMPORTACIONES ---
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { verifyToken } = require('../middleware/authMiddleware');
+// --- CAMBIO: Se importa verifyToken e isAdmin ---
+const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
-console.log("authRoutes.js: Configurando ruta POST para /register");
+// --- 2. DEFINICIÓN DE RUTAS ---
+
+// Ruta para registrar un nuevo usuario
 router.post('/register', authController.register);
 
-console.log("authRoutes.js: Configurando ruta POST para /login");
+// Ruta para iniciar sesión
 router.post('/login', authController.login);
 
-console.log("authRoutes.js: Configurando ruta GET para /me (protegida)");
+// Ruta para obtener los datos del usuario actualmente autenticado (Ruta Protegida)
 router.get('/me', verifyToken, authController.getMe);
 
-console.log("authRoutes.js: Configurando ruta POST para /qr-login");
+// Ruta para el inicio de sesión mediante QR
 router.post('/qr-login', authController.qrLogin);
 
-// --- NUEVA RUTA: Logout (protegida) ---
-console.log("authRoutes.js: Configurando ruta POST para /logout (protegida)");
+// Ruta para cerrar sesión (Ruta Protegida)
 router.post('/logout', verifyToken, authController.logout);
-// --- FIN NUEVA RUTA ---
 
+
+// --- NUEVA RUTA AÑADIDA ---
+// Esta ruta devuelve todos los usuarios y está protegida para que solo los admins puedan usarla.
+// Se ejecutan los middlewares en orden: primero 'verifyToken', y si es exitoso, luego 'isAdmin'.
+router.get('/users', [verifyToken, isAdmin], authController.getAllUsers);
+
+
+// --- 3. EXPORTACIÓN ---
 module.exports = router;
